@@ -17,12 +17,20 @@ namespace TraceExperiments
         trace.Listeners.Add(methodWithAutoColorsListener);
         trace.TraceInformation("methodWithAutoColorsListener " + i);
       }
+
       for (int i = 0; i < 5; i++)
       {
         var source = "source " + i;
         var trace = new TraceSource(source, SourceLevels.All);
         trace.Listeners.Add(magentaListener);
         trace.TraceInformation("magentaListener " + i);
+      }
+
+      {
+        var source = "AppConfigTraceSource";
+        var trace = new TraceSource(source, SourceLevels.All);
+        trace.TraceInformation("App.config listener is tracing...");
+        trace.TraceEvent(TraceEventType.Error, 1, "{0} {1}", source, System.Diagnostics.Trace.Listeners);
       }
 
       Console.ReadLine();

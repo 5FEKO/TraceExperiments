@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Diagnostics;
-using Newtonsoft.Json;
 
 namespace TraceExperiments
 {
@@ -13,15 +10,40 @@ namespace TraceExperiments
     private ConsoleColor color;
     private bool traceMethod;
     private Dictionary<string, ConsoleColor> colorMap;
+      
+    // usage: initializeData="Green, true"      
+    public ColorConsoleTraceListener(string initializeData)
+      : base()
+    {      
+      ConsoleColor color = Console.ForegroundColor;
+      bool traceMethod = false;
+
+      var parameters = initializeData.Split(',');
+      if(parameters.Length > 0)
+      {
+        Enum.TryParse<ConsoleColor>(parameters[0].Trim(), true, out color);
+      }
+      if(parameters.Length > 1)
+      {
+        traceMethod = parameters[1].Trim().StartsWith("true", StringComparison.OrdinalIgnoreCase);
+      }
+
+      this.Initialize(color, traceMethod);
+    }
 
     public ColorConsoleTraceListener(bool traceMethod)
       : this(ConsoleColor.Black, traceMethod)
     {
     }
 
-    // if black is specified, behavior is to color based on source string hash.
+    // if black is specified, behavior is to color consecutive sources with consecutive color enums
     public ColorConsoleTraceListener(ConsoleColor color = ConsoleColor.Black, bool traceMethod = false)
       :base()
+    {
+      this.Initialize(color, traceMethod);
+    }
+
+    private void Initialize(ConsoleColor color, bool traceMethod)
     {
       this.color = color;
       this.traceMethod = traceMethod;
@@ -43,14 +65,18 @@ namespace TraceExperiments
       Console.ForegroundColor = originalColor;
     }
 
-    private void AppendMethod(ref string format, int depth = 6)
+    private void AppendMethod(ref string format)
     {
       if (this.traceMethod)
       {
         var stackTrace = Environment.StackTrace.Split(Environment.NewLine.ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
-        var methodDetails = stackTrace[depth].Split(new string[] { " in " }, StringSplitOptions.RemoveEmptyEntries);
 
-        format = string.Format("{0}\n\t{1}", format, methodDetails[0]);
+        var token = "System.Diagnostics.TraceSource";
+        var search = stackTrace.SkipWhile(x => !x.Contains(token));
+        var frame = search.SkipWhile(x => x.Contains(token)).First();
+        var methodDetails = frame.Split(new string[] { " in " }, StringSplitOptions.RemoveEmptyEntries);
+
+        format = string.Format("{0}{1}{2}", format, Environment.NewLine, methodDetails[0]);
         //format = string.Format("{0}.{1}\n\t{2}", method.ReflectedType.FullName, method.Name, format);
       }
     }
